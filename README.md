@@ -264,22 +264,3 @@ docker compose ps
 curl http://localhost:8000/health
 ```
 
-## 🎓 Learning Path
-
-### Beginner
-1. Start services and explore the frontend
-2. Test cache behavior with the same product ID multiple times
-3. Monitor statistics to see hit rates improve
-4. Clear cache and observe the reset
-
-### Intermediate
-5. Examine logs to understand cache-aside pattern
-6. Explore Redis Commander to see cached keys
-7. Check pgAdmin to understand the source data
-8. Modify TTL in the backend code and observe behavior
-
-### Advanced
-9. Scale services with `docker compose up --scale backend=3`
-10. Implement cache warming strategies
-11. Add monitoring with Prometheus/Grafana
-12. Benchmark performance under load
