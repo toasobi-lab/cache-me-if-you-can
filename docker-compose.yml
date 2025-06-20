@@ -1,0 +1,132 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15.6
+    container_name: cache-me-postgres
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+    ports:
+      - "5432:5432"
+    volumes:
+      - cache_me_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7.2.5-alpine
+    container_name: cache-me-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - cache_me_redis_data:/data
+    networks:
+      - app-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI Backend
+  backend:
+    build: ./backend
+    container_name: cache-me-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/products_db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-net
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Astro Frontend
+  frontend:
+    build: ./frontend
+    container_name: cache-me-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+    volumes:
+      - ./frontend:/app
+      - cache_me_frontend_node_modules:/app/node_modules
+    command: npm run dev -- --host 0.0.0.0 --port 3000
+
+  # pgAdmin for PostgreSQL management
+  pgadmin:
+    image: dpage/pgadmin4:9.4
+    container_name: cache-me-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@cacheme.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - cache_me_pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+      - ./pgadmin/pgpass:/pgadmin4/pgpass
+    entrypoint: >
+      /bin/sh -c "
+      chmod 600 /pgadmin4/pgpass &&
+      /entrypoint.sh
+      "
+    depends_on:
+      - postgres
+    networks:
+      - app-net
+    user: root
+
+  # Redis Commander for Redis management
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: cache-me-redis-commander
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "5540:8081"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-net
+
+volumes:
+  # PostgreSQL database files and data
+  cache_me_postgres_data:
+    name: cache-me-postgres-data
+  
+  # Redis cache data and persistence
+  cache_me_redis_data:
+    name: cache-me-redis-data
+  
+  # pgAdmin configuration and user data
+  cache_me_pgadmin_data:
+    name: cache-me-pgadmin-data
+  
+  # Frontend node_modules to avoid reinstalling dependencies
+  cache_me_frontend_node_modules:
+    name: cache-me-frontend-node-modules
+
+networks:
+  app-net:
+    driver: bridge 

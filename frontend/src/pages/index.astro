@@ -1,0 +1,330 @@
+---
+// This is the main page component
+---
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>Cache Me If You Can - Redis Caching Demo</title>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">
+                🚀 Cache Me If You Can
+            </h1>
+            <p class="text-xl text-gray-600 mb-2">
+                Redis Caching Microservice Demo
+            </p>
+            <p class="text-gray-500">
+                Test Redis caching with FastAPI, PostgreSQL, and Astro
+            </p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="max-w-4xl mx-auto">
+            <!-- Product Lookup Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+                    🔍 Product Lookup
+                </h2>
+                <div class="flex gap-4 mb-6">
+                    <input 
+                        type="number" 
+                        id="productId" 
+                        placeholder="Enter Product ID (1-15)" 
+                        min="1" 
+                        max="15"
+                        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                    <button 
+                        onclick="lookupProduct()"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Lookup Product
+                    </button>
+                </div>
+                
+                <!-- Result Display -->
+                <div id="result" class="hidden">
+                    <div class="border-t pt-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Product Details</h3>
+                        <div id="productDetails" class="bg-gray-50 rounded-lg p-4"></div>
+                        <div id="performanceDetails" class="mt-4"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cache Stats Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+                    📊 Cache Statistics
+                </h2>
+                <div class="flex space-x-4 mb-4">
+                    <button 
+                        onclick="getCacheStats()"
+                        class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                        Refresh Stats
+                    </button>
+                    <button 
+                        onclick="clearCache()"
+                        class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        Clear Cache
+                    </button>
+                </div>
+                <div id="cacheStats" class="bg-gray-50 rounded-lg p-4">
+                    <p class="text-gray-500">Click "Refresh Stats" to see Redis cache statistics</p>
+                </div>
+            </div>
+
+            <!-- Quick Test Section -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+                    ⚡ Quick Cache Test
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    Test the same product ID multiple times to see cache hits vs misses:
+                </p>
+                <div class="grid grid-cols-3 gap-4">
+                    <button 
+                        onclick="testProduct(1)"
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        Test Product 1
+                    </button>
+                    <button 
+                        onclick="testProduct(5)"
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        Test Product 5
+                    </button>
+                    <button 
+                        onclick="testProduct(10)"
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        Test Product 10
+                    </button>
+                </div>
+            </div>
+
+            <!-- Service Links -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">
+                        🗄️ Database Admin
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        Access pgAdmin to view PostgreSQL data
+                    </p>
+                    <a 
+                        href="http://localhost:5050" 
+                        target="_blank"
+                        class="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Open pgAdmin
+                    </a>
+                    <div class="mt-2 text-sm text-gray-500">
+                        Email: admin@cacheme.com | Password: admin123
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-lg p-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">
+                        🔴 Cache Admin
+                    </h3>
+                    <p class="text-gray-600 mb-4">
+                        Access Redis Commander to view Redis cache
+                    </p>
+                    <a 
+                        href="http://localhost:5540" 
+                        target="_blank"
+                        class="inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        Open Redis Commander
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script is:inline>
+        const API_BASE = 'http://localhost:8000';
+
+        async function lookupProduct() {
+            const productIdInput = document.getElementById('productId');
+            if (!productIdInput) {
+                alert('Product ID input not found');
+                return;
+            }
+            
+            const productId = productIdInput.value;
+            if (!productId) {
+                alert('Please enter a product ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/products/${productId}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayProduct(data);
+                } else {
+                    alert(`Error: ${data.detail}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to fetch product. Make sure the backend is running.');
+            }
+        }
+
+        function displayProduct(product) {
+            const resultDiv = document.getElementById('result');
+            const detailsDiv = document.getElementById('productDetails');
+            const perfDiv = document.getElementById('performanceDetails');
+            
+            if (!resultDiv || !detailsDiv || !perfDiv) {
+                console.error('Required DOM elements not found');
+                return;
+            }
+            
+            detailsDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p><strong>ID:</strong> ${product.id}</p>
+                        <p><strong>Name:</strong> ${product.name}</p>
+                        <p><strong>Category:</strong> ${product.category || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <p><strong>Price:</strong> $${product.price.toFixed(2)}</p>
+                        <p><strong>Created:</strong> ${product.created_at || 'N/A'}</p>
+                        <p><strong>Updated:</strong> ${product.updated_at || 'N/A'}</p>
+                    </div>
+                </div>
+                ${product.description ? `<p class="mt-4"><strong>Description:</strong> ${product.description}</p>` : ''}
+            `;
+            
+            const isCache = product.source === 'cache';
+            const sourceColor = isCache ? 'text-green-600' : 'text-blue-600';
+            const sourceText = isCache ? 'Cache (Fast)' : 'Database (Slow)';
+
+            perfDiv.innerHTML = `
+                <div class="bg-gray-100 rounded-lg p-3">
+                    <h4 class="font-semibold text-gray-700">Request Performance</h4>
+                    <p>
+                        <strong>Source:</strong> 
+                        <span class="${sourceColor} font-bold">${sourceText}</span>
+                    </p>
+                    <p>
+                        <strong>Fetch Time:</strong> 
+                        <span class="font-bold">${product.fetch_time_ms.toFixed(2)} ms</span>
+                    </p>
+                </div>
+            `;
+            
+            resultDiv.classList.remove('hidden');
+        }
+
+        async function getCacheStats() {
+            try {
+                const response = await fetch(`${API_BASE}/cache/stats`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayCacheStats(data.cache_stats);
+                } else {
+                    alert('Failed to fetch cache stats');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to fetch cache stats. Make sure the backend is running.');
+            }
+        }
+
+        function displayCacheStats(stats) {
+            const statsDiv = document.getElementById('cacheStats');
+            
+            if (!statsDiv) {
+                console.error('Cache stats div not found');
+                return;
+            }
+            
+            const hitRate = stats.keyspace_hits + stats.keyspace_misses > 0 
+                ? ((stats.keyspace_hits / (stats.keyspace_hits + stats.keyspace_misses)) * 100).toFixed(2)
+                : 0;
+            
+            statsDiv.innerHTML = `
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="font-semibold text-green-600">Cache Hits</p>
+                        <p class="text-2xl">${stats.keyspace_hits}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-red-600">Cache Misses</p>
+                        <p class="text-2xl">${stats.keyspace_misses}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold text-blue-600">Hit Rate</p>
+                        <p class="text-2xl">${hitRate}%</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Memory Used</p>
+                        <p class="text-lg">${stats.used_memory_human}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Connected Clients</p>
+                        <p class="text-lg">${stats.connected_clients}</p>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Total Commands</p>
+                        <p class="text-lg">${stats.total_commands_processed}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function testProduct(productId) {
+            const productIdInput = document.getElementById('productId');
+            if (productIdInput) {
+                productIdInput.value = productId.toString();
+            }
+            await lookupProduct();
+        }
+
+        async function clearCache() {
+            if (!confirm('Are you sure you want to clear all cache? This will force all subsequent requests to fetch from the database.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/cache/clear`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`Cache cleared successfully! ${data.message}`);
+                    // Refresh cache stats to show the cleared state
+                    getCacheStats();
+                } else {
+                    alert(`Error clearing cache: ${data.detail}`);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to clear cache. Make sure the backend is running.');
+            }
+        }
+
+        // Load cache stats on page load
+        window.addEventListener('load', () => {
+            getCacheStats();
+        });
+    </script>
+</body>
+</html> 
