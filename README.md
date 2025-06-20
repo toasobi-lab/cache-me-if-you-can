@@ -77,6 +77,9 @@ docker compose ps
 | **pgAdmin** | http://localhost:5050 | `admin@cacheme.com` / `admin123` | Database management |
 | **Redis Commander** | http://localhost:5540 | None | Cache visualization |
 
+![Main Interface](docs/screenshots/main-interface.png)
+*The main testing interface with real-time performance metrics and cache statistics*
+
 ### 3. Automated Setup
 🎉 **Everything is pre-configured!** 
 - PostgreSQL initializes with 15 sample products
@@ -98,6 +101,12 @@ Experience the dramatic speed difference between cache hits and database queries
 - 🟢 Shows "Cache (Fast)" in green  
 - ⚡ Typical response: 1-10ms (10-100x faster!)
 - 📈 Increments cache hit counter
+
+![Redis Cache Speed](docs/screenshots/redis-speed.png)
+*Lightning-fast cache response (Redis) - notice the significantly lower response time*
+
+![Database Query Speed](docs/screenshots/db-speed.png)
+*Database query response (PostgreSQL) - compare the response time difference with the cache hit above*
 
 ### 🧪 **Interactive Testing Features**
 - **Product Lookup**: Test individual products with real-time metrics
@@ -147,6 +156,9 @@ The statistics you see on the frontend are fetched directly from the Redis serve
 
 ## 📊 Understanding Cache Metrics
 
+![Cache Statistics](docs/screenshots/cache-stats.png)
+*Live Redis cache statistics dashboard showing all the key metrics explained below*
+
 ### Key Performance Indicators
 - **Cache Hits**: Successful cache retrievals (fast responses)
 - **Cache Misses**: Cache lookups that required database queries
@@ -155,11 +167,13 @@ The statistics you see on the frontend are fetched directly from the Redis serve
 - **Connected Clients**: Active connections (typically 2: backend + Redis Commander)
 
 ### Performance Expectations
-| Scenario | Response Time | Source |
-|----------|---------------|---------|
-| Cache Hit | 1-10ms | Redis |
-| Cache Miss | 50-200ms | PostgreSQL |
-| **Speed Improvement** | **10-100x faster** | Cache vs DB |
+| Scenario | Response Time | Source | Notes |
+|----------|---------------|---------|-------|
+| Cache Hit | ~2-15ms | Redis | Varies by system |
+| Cache Miss | ~20-300ms | PostgreSQL | Varies by system |
+| **Speed Improvement** | **5-50x faster** | Cache vs DB | **The key is the relative difference!** |
+
+> **💡 Performance Note**: Actual response times vary based on your system (CPU, RAM, Docker resources, etc.), but you'll always see cache hits being significantly faster than database queries. The learning value is in observing this performance difference, not the absolute numbers.
 
 ## 🔧 API Reference
 
@@ -217,6 +231,9 @@ docker volume ls | grep cache-me
 # cache-me-frontend-node-modules → Dependencies
 ```
 
+![pgAdmin Interface](docs/screenshots/pgadmin-interface.png)
+*pgAdmin automatically configured with PostgreSQL connection and sample product data*
+
 ### Data Management Commands
 ```bash
 # View volume details
@@ -258,6 +275,9 @@ docker compose exec backend redis-cli -h redis ping
 # View backend logs
 docker compose logs -f backend
 ```
+
+![Redis Commander](docs/screenshots/redis-commander.png)
+*Redis Commander interface showing cached product keys and TTL information*
 
 **🔴 pgAdmin server not auto-configured**
 ```bash
