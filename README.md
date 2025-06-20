@@ -129,7 +129,7 @@ docker compose ps
 > **💡 Local Environment Note**: Response times vary by system, but you'll always observe dramatic performance differences between cache hits and database queries.
 
 ![Redis Cache Speed](docs/screenshots/redis-speed.png) ![Database Query Speed](docs/screenshots/db-speed.png)
-*Cache hits (left) vs Database queries (right) - 5-50x performance improvement*
+*Redis cache hits vs PostgreSQL database queries - 5-50x performance improvement*
 
 **Performance Expectations:**
 | Scenario | Response Time | Source | Speed Improvement |
